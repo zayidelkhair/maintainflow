@@ -1,0 +1,22 @@
+name: Maintainflow Audit
+description: Run maintainflow health and security audit in CI
+branding:
+  icon: shield
+  color: green
+inputs:
+  path:
+    description: Repository path to audit
+    default: "."
+  min-health-score:
+    description: Minimum health score to pass (overrides .maintainflow.json)
+    default: ""
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 22
+    - name: Run maintainflow audit
+      shell: bash
+      run: npx maintainflow@latest audit --path ${{ inputs.path }}
+      working-directory: ${{ github.workspace }}

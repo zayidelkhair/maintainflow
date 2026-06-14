@@ -54,6 +54,53 @@ export async function getContributorCount(root: string): Promise<number> {
   }
 }
 
+export interface GitCommit {
+  hash: string;
+  date: string;
+  author: string;
+  subject: string;
+}
+
+export async function getCommitsSince(
+  root: string,
+  since?: string,
+  limit = 100
+): Promise<GitCommit[]> {
+  try {
+    const args = [
+      "log",
+      `--max-count=${limit}`,
+      "--no-merges",
+      "--pretty=format:%H|%cI|%an|%s",
+    ];
+    if (since) args.push(`${since}..HEAD`);
+
+    const { stdout } = await exec("git", args, { cwd: root });
+    if (!stdout.trim()) return [];
+
+    return stdout.trim().split("\n").map((line) => {
+      const [hash, date, author, ...subjectParts] = line.split("|");
+      return {
+        hash: hash.slice(0, 7),
+        date: date.split("T")[0],
+        author,
+        subject: subjectParts.join("|"),
+      };
+    });
+  } catch {
+    return [];
+  }
+}
+
+export async function getLatestTag(root: string): Promise<string | null> {
+  try {
+    const { stdout } = await exec("git", ["describe", "--tags", "--abbrev=0"], { cwd: root });
+    return stdout.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function getOpenIssuesAndPRs(
   root: string
 ): Promise<{ issues: number; prs: number } | null> {

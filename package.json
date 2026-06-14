@@ -1,6 +1,6 @@
 {
   "name": "maintainflow",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Open-source maintainer toolkit — repo health audits, security scans, PR triage, and release automation for OSS projects",
   "type": "module",
   "main": "./dist/index.js",

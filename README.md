@@ -5,6 +5,7 @@
 Built for maintainers who review pull requests, triage issues, cut releases, and keep repositories secure — the exact workflows the [Codex for Open Source](https://openai.com/form/codex-for-oss/) program supports.
 
 [![CI](https://github.com/zayidelkhair/maintainflow/actions/workflows/ci.yml/badge.svg)](https://github.com/zayidelkhair/maintainflow/actions/workflows/ci.yml)
+[![maintainflow health](https://img.shields.io/badge/maintainflow_health-100%2F100-brightgreen)](https://github.com/zayidelkhair/maintainflow)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![npm version](https://img.shields.io/npm/v/maintainflow.svg)](https://www.npmjs.com/package/maintainflow)
 
@@ -14,100 +15,124 @@ Open-source maintainers carry disproportionate load: security reviews, release c
 
 | Command | What it does |
 |---------|-------------|
-| `health` | Score your repo's maintainer readiness (README, LICENSE, CI, SECURITY.md, activity) |
-| `security` | Scan for leaked secrets, hardcoded credentials, and common vulnerability patterns |
+| `init` | Bootstrap SECURITY.md, CONTRIBUTING.md, CI, dependabot, and config |
+| `health` | Score your repo's maintainer readiness (README, LICENSE, CI, SECURITY.md, AGENTS.md) |
+| `security` | Scan for leaked secrets with **line numbers** and vulnerability patterns |
 | `triage` | Prioritize open GitHub issues and PRs by urgency (requires [GitHub CLI](https://cli.github.com/)) |
+| `changelog` | Generate release notes from git commits |
 | `release` | Interactive release checklist — changelog, version bump, publish, announce |
 | `agents-md` | Generate `AGENTS.md` for Codex, Copilot, and other AI coding agents |
+| `report` | Full markdown/JSON audit report with README badge |
 | `audit` | Run health + security in one pass (great for CI) |
 
 ## Quick start
 
 ```bash
-# Run without installing
-npx maintainflow health
+# Bootstrap a new OSS repo
+npx maintainflow init
 
-# Or install globally
-npm install -g maintainflow
-maintainflow audit
+# Run a full audit
+npx maintainflow audit
+
+# Generate a markdown report
+npx maintainflow report --markdown --output AUDIT.md
+```
+
+## Configuration
+
+Create `.maintainflow.json` in your repo root (or run `maintainflow init`):
+
+```json
+{
+  "minHealthScore": 60,
+  "failOnHighSeverity": true,
+  "security": {
+    "maxFiles": 500,
+    "exclude": ["fixtures/", "testdata/"]
+  },
+  "health": {
+    "staleDays": 90
+  }
+}
 ```
 
 ## Usage
+
+### Bootstrap a new project
+
+```bash
+maintainflow init
+maintainflow agents-md
+maintainflow audit
+```
+
+Creates SECURITY.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, CI workflow, dependabot config, and `.maintainflow.json`.
 
 ### Repository health audit
 
 ```bash
 maintainflow health
-maintainflow health --path /path/to/repo --json
+maintainflow health --json
 ```
 
-Checks for README, LICENSE, CONTRIBUTING.md, SECURITY.md, CI workflows, test scripts, recent activity, and more. Returns a score out of 100 with actionable recommendations.
+Checks README, LICENSE, CONTRIBUTING.md, SECURITY.md, AGENTS.md, Dependabot, CI, issue templates, test scripts, and recent git activity. Returns a score out of 100.
 
 ### Security scan
 
 ```bash
 maintainflow security
-maintainflow security --max-files 1000
 ```
 
-Scans source files for:
+Detects AWS keys, GitHub tokens, OpenAI/Stripe/Slack/npm/Discord secrets, private keys, JWTs, `eval()`, XSS patterns, SQL injection, and more — with **file and line numbers**.
 
-- AWS keys, GitHub tokens, OpenAI API keys, private keys
-- Hardcoded passwords and secrets
-- `eval()`, SQL injection patterns, XSS risks
-- Committed `.env` files and missing lockfiles
-
-### Issue & PR triage
+### Generate changelog
 
 ```bash
-maintainflow triage
+maintainflow changelog --since v0.1.0
+maintainflow changelog --markdown -o CHANGELOG_ENTRY.md
 ```
 
-Requires `gh` CLI authenticated (`gh auth login`). Prioritizes items tagged `bug`, `security`, `critical`, and flags stale PRs.
+Groups commits into Features, Bug Fixes, Breaking Changes, and Other.
 
-### Release checklist
+### Full audit report
 
 ```bash
-maintainflow release --save
-maintainflow release-done changelog
+maintainflow report --markdown --output AUDIT.md --triage
 ```
 
-Tracks release tasks in `.maintainflow-release.json`.
+Produces a shareable markdown report with health table, security findings, and optional triage summary.
 
-### Generate AGENTS.md
+### CI integration
 
-```bash
-maintainflow agents-md
-maintainflow agents-md --dry-run
-```
-
-Creates a maintainer-focused `AGENTS.md` tailored to your project's stack — compatible with [Codex AGENTS.md](https://developers.openai.com/codex/guides/agents-md) workflows.
-
-### Full audit (CI-friendly)
-
-```bash
-maintainflow audit
-```
-
-Exits with code 1 if health score < 60 or critical/high security findings exist.
-
-## CI integration
-
-Add to your GitHub Actions workflow:
+**Option 1 — one-liner:**
 
 ```yaml
 - run: npx maintainflow@latest audit
 ```
 
-Or use the built-in workflow in this repo as a template.
+**Option 2 — GitHub Action:**
+
+```yaml
+- uses: zayidelkhair/maintainflow@v0.2.0
+  with:
+    path: .
+```
 
 ## Programmatic API
 
 ```typescript
-import { runHealthAudit, runSecurityScan } from "maintainflow";
+import {
+  runHealthAudit,
+  runSecurityScan,
+  generateChangelog,
+  generateAuditReport,
+  loadConfig,
+} from "maintainflow";
 
-const health = await runHealthAudit("./my-repo", true);
-const security = await runSecurityScan("./my-repo", { json: true });
+const config = await loadConfig("./my-repo");
+const health = await runHealthAudit("./my-repo", true, true, config);
+const security = await runSecurityScan("./my-repo", { silent: true, config });
+const changelog = await generateChangelog("./my-repo", { silent: true });
 ```
 
 ## Contributing

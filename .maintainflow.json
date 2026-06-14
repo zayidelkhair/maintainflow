@@ -1,0 +1,11 @@
+{
+  "minHealthScore": 60,
+  "failOnHighSeverity": true,
+  "security": {
+    "maxFiles": 500,
+    "exclude": []
+  },
+  "health": {
+    "staleDays": 90
+  }
+}

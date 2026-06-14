@@ -8,7 +8,8 @@ import {
 } from "../lib/git.js";
 import { printHealthReport, scoreToGrade } from "../lib/report.js";
 import { calculateHealthScore } from "../lib/score.js";
-import type { Finding, HealthCheck, HealthReport } from "../types.js";
+import type { Finding, HealthCheck, HealthReport, MaintainflowConfig } from "../types.js";
+import { loadConfig } from "../lib/config.js";
 
 const ESSENTIAL_FILES = [
   { path: "README.md", name: "README", weight: 15 },
@@ -18,19 +19,24 @@ const ESSENTIAL_FILES = [
   { path: ".github/ISSUE_TEMPLATE", name: "Issue templates", weight: 5, isDir: true },
   { path: "CODE_OF_CONDUCT.md", name: "Code of conduct", weight: 5 },
   { path: "SECURITY.md", name: "Security policy", weight: 8 },
+  { path: "AGENTS.md", name: "AGENTS.md (AI agents)", weight: 5 },
+  { path: ".github/dependabot.yml", name: "Dependabot config", weight: 5 },
+  { path: ".maintainflow.json", name: "maintainflow config", weight: 3 },
 ];
 
 export async function runHealthAudit(
   root: string,
   json = false,
-  silent = false
+  silent = false,
+  config?: Required<MaintainflowConfig>
 ): Promise<HealthReport> {
+  const cfg = config ?? (await loadConfig(root));
   const checks: HealthCheck[] = [];
   const findings: Finding[] = [];
 
   for (const file of ESSENTIAL_FILES) {
     const fullPath = join(root, file.path);
-    const exists = file.isDir ? await pathExists(fullPath) : await pathExists(fullPath);
+    const exists = await pathExists(fullPath);
     checks.push({
       id: file.path,
       name: file.name,
@@ -75,7 +81,8 @@ export async function runHealthAudit(
       ? Math.floor((Date.now() - lastCommit.getTime()) / (1000 * 60 * 60 * 24))
       : null;
 
-    const active = daysSinceCommit !== null && daysSinceCommit <= 90;
+    const staleDays = cfg.health.staleDays ?? 90;
+    const active = daysSinceCommit !== null && daysSinceCommit <= staleDays;
     checks.push({
       id: "activity",
       name: "Recent activity",

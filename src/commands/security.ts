@@ -1,28 +1,37 @@
 import { listSourceFiles, readTextFile } from "../lib/fs.js";
+import { loadConfig } from "../lib/config.js";
 import {
   SECRET_PATTERNS,
   SECURITY_SCAN_EXCLUSIONS,
   VULNERABILITY_PATTERNS,
 } from "../lib/patterns.js";
 import { printSecurityReport } from "../lib/report.js";
-import type { Finding, SecurityReport, Severity } from "../types.js";
+import { scanContentForPatterns } from "../lib/scan.js";
+import type { Finding, MaintainflowConfig, SecurityReport, Severity } from "../types.js";
 
 function emptySummary(): Record<Severity, number> {
   return { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
 }
 
-function isExcluded(filePath: string): boolean {
+function isExcluded(filePath: string, customExcludes: string[] = []): boolean {
   const normalized = filePath.replace(/\\/g, "/");
-  return SECURITY_SCAN_EXCLUSIONS.some((pattern) => pattern.test(normalized));
+  if (SECURITY_SCAN_EXCLUSIONS.some((pattern) => pattern.test(normalized))) return true;
+  return customExcludes.some((ex) => normalized.includes(ex.replace(/\\/g, "/")));
 }
 
 export async function runSecurityScan(
   root: string,
-  options: { json?: boolean; maxFiles?: number; silent?: boolean } = {}
+  options: {
+    json?: boolean;
+    maxFiles?: number;
+    silent?: boolean;
+    config?: Required<MaintainflowConfig>;
+  } = {}
 ): Promise<SecurityReport> {
+  const cfg = options.config ?? (await loadConfig(root));
   const allFiles = await listSourceFiles(root);
-  const files = allFiles.filter((f) => !isExcluded(f));
-  const maxFiles = options.maxFiles ?? 500;
+  const files = allFiles.filter((f) => !isExcluded(f, cfg.security.exclude));
+  const maxFiles = options.maxFiles ?? cfg.security.maxFiles;
   const scanned = files.slice(0, maxFiles);
   const findings: Finding[] = [];
 
@@ -32,31 +41,10 @@ export async function runSecurityScan(
 
     const relativePath = file.replace(root, "").replace(/^[/\\]/, "");
 
-    for (const rule of SECRET_PATTERNS) {
-      if (rule.pattern.test(content)) {
-        findings.push({
-          id: `${rule.id}-${relativePath}`,
-          title: rule.title,
-          description: `Pattern matched in ${relativePath}`,
-          severity: rule.severity,
-          file: relativePath,
-          recommendation: rule.recommendation,
-        });
-      }
-    }
-
-    for (const rule of VULNERABILITY_PATTERNS) {
-      if (rule.pattern.test(content)) {
-        findings.push({
-          id: `${rule.id}-${relativePath}`,
-          title: rule.title,
-          description: `Potentially unsafe pattern in ${relativePath}`,
-          severity: rule.severity,
-          file: relativePath,
-          recommendation: rule.recommendation,
-        });
-      }
-    }
+    findings.push(
+      ...scanContentForPatterns(content, SECRET_PATTERNS, relativePath, "Secret pattern matched"),
+      ...scanContentForPatterns(content, VULNERABILITY_PATTERNS, relativePath, "Unsafe pattern detected")
+    );
 
     if (relativePath.includes(".env") && !relativePath.endsWith(".example")) {
       findings.push({

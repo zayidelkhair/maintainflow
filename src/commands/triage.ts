@@ -135,7 +135,11 @@ function printTriageReport(items: TriageItem[], usedGh: boolean): void {
   console.log();
 }
 
-export async function runTriage(root: string, json = false): Promise<TriageItem[]> {
+export async function runTriage(
+  root: string,
+  json = false,
+  silent = false
+): Promise<TriageItem[]> {
   const [issues, prs] = await Promise.all([
     fetchGhItems(root, "issue"),
     fetchGhItems(root, "pr"),
@@ -175,10 +179,12 @@ export async function runTriage(root: string, json = false): Promise<TriageItem[
     return order[a.priority] - order[b.priority];
   });
 
-  if (json) {
-    console.log(JSON.stringify(items, null, 2));
-  } else {
-    printTriageReport(items, usedGh);
+  if (!silent) {
+    if (json) {
+      console.log(JSON.stringify(items, null, 2));
+    } else {
+      printTriageReport(items, usedGh);
+    }
   }
 
   return items;

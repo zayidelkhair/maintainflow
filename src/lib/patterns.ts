@@ -51,6 +51,41 @@ export const SECRET_PATTERNS: ScanPattern[] = [
     severity: "high",
     recommendation: "Ensure tokens are not committed; use short-lived tokens in CI only.",
   },
+  {
+    id: "stripe-key",
+    pattern: /sk_live_[a-zA-Z0-9]{20,}/,
+    title: "Possible Stripe live secret key",
+    severity: "critical",
+    recommendation: "Revoke at dashboard.stripe.com and use Stripe webhook secrets via env vars.",
+  },
+  {
+    id: "slack-token",
+    pattern: /xox[baprs]-[a-zA-Z0-9-]{10,}/,
+    title: "Possible Slack token",
+    severity: "critical",
+    recommendation: "Revoke the token in Slack app settings and use workspace secrets.",
+  },
+  {
+    id: "npm-token",
+    pattern: /npm_[a-zA-Z0-9]{36}/,
+    title: "Possible npm access token",
+    severity: "critical",
+    recommendation: "Revoke at npmjs.com and use OIDC or npm provenance in CI.",
+  },
+  {
+    id: "discord-token",
+    pattern: /[MN][A-Za-z\d]{23,}\.[\w-]{6}\.[\w-]{27}/,
+    title: "Possible Discord bot token",
+    severity: "critical",
+    recommendation: "Regenerate the bot token in the Discord developer portal.",
+  },
+  {
+    id: "bearer-token",
+    pattern: /Bearer\s+[a-zA-Z0-9._-]{20,}/,
+    title: "Hardcoded bearer token",
+    severity: "high",
+    recommendation: "Use Authorization headers from environment, never hardcoded in source.",
+  },
 ];
 
 export const VULNERABILITY_PATTERNS: ScanPattern[] = [
@@ -88,6 +123,20 @@ export const VULNERABILITY_PATTERNS: ScanPattern[] = [
     title: "Shell command built with concatenation",
     severity: "high",
     recommendation: "Use execFile with argument arrays instead of shell string concatenation.",
+  },
+  {
+    id: "document-write",
+    pattern: /document\.write\s*\(/,
+    title: "Use of document.write()",
+    severity: "medium",
+    recommendation: "Avoid document.write; use DOM APIs to prevent XSS.",
+  },
+  {
+    id: "insecure-random",
+    pattern: /Math\.random\s*\(\s*\).*(?:token|secret|password|key)/i,
+    title: "Math.random() used for security-sensitive value",
+    severity: "high",
+    recommendation: "Use crypto.randomBytes() or Web Crypto for security tokens.",
   },
 ];
 

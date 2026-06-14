@@ -6,6 +6,7 @@ export interface Finding {
   description: string;
   severity: Severity;
   file?: string;
+  line?: number;
   recommendation?: string;
 }
 
@@ -47,4 +48,37 @@ export interface ReleaseChecklist {
     done: boolean;
     required: boolean;
   }>;
+}
+
+export interface MaintainflowConfig {
+  minHealthScore?: number;
+  failOnHighSeverity?: boolean;
+  security?: {
+    maxFiles?: number;
+    exclude?: string[];
+  };
+  health?: {
+    staleDays?: number;
+  };
+}
+
+export interface ChangelogEntry {
+  hash: string;
+  date: string;
+  author: string;
+  subject: string;
+  category: "features" | "fixes" | "breaking" | "other";
+}
+
+export interface ChangelogReport {
+  version: string;
+  since?: string;
+  entries: ChangelogEntry[];
+}
+
+export interface AuditReport {
+  generatedAt: string;
+  health: HealthReport;
+  security: SecurityReport;
+  triage?: TriageItem[];
 }
