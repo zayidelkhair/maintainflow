@@ -20,7 +20,11 @@ const ESSENTIAL_FILES = [
   { path: "SECURITY.md", name: "Security policy", weight: 8 },
 ];
 
-export async function runHealthAudit(root: string, json = false): Promise<HealthReport> {
+export async function runHealthAudit(
+  root: string,
+  json = false,
+  silent = false
+): Promise<HealthReport> {
   const checks: HealthCheck[] = [];
   const findings: Finding[] = [];
 
@@ -159,10 +163,12 @@ export async function runHealthAudit(root: string, json = false): Promise<Health
     findings,
   };
 
-  if (json) {
-    console.log(JSON.stringify(report, null, 2));
-  } else {
-    printHealthReport(report);
+  if (!silent) {
+    if (json) {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      printHealthReport(report);
+    }
   }
 
   return report;

@@ -103,7 +103,7 @@ function emptySummary(): Record<Severity, number> {
 
 export async function runSecurityScan(
   root: string,
-  options: { json?: boolean; maxFiles?: number } = {}
+  options: { json?: boolean; maxFiles?: number; silent?: boolean } = {}
 ): Promise<SecurityReport> {
   const files = await listSourceFiles(root);
   const maxFiles = options.maxFiles ?? 500;
@@ -176,10 +176,12 @@ export async function runSecurityScan(
     summary,
   };
 
-  if (options.json) {
-    console.log(JSON.stringify(report, null, 2));
-  } else {
-    printSecurityReport(report);
+  if (!options.silent) {
+    if (options.json) {
+      console.log(JSON.stringify(report, null, 2));
+    } else {
+      printSecurityReport(report);
+    }
   }
 
   return report;

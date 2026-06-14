@@ -99,8 +99,8 @@ program
   .action(async (opts: { path: string; json?: boolean }) => {
     const root = resolve(opts.path);
     const [health, security] = await Promise.all([
-      runHealthAudit(root, opts.json),
-      runSecurityScan(root, { json: opts.json }),
+      runHealthAudit(root, opts.json, opts.json),
+      runSecurityScan(root, { json: opts.json, silent: opts.json }),
     ]);
 
     if (opts.json) {
