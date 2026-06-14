@@ -1,111 +1,27 @@
 import { listSourceFiles, readTextFile } from "../lib/fs.js";
+import {
+  SECRET_PATTERNS,
+  SECURITY_SCAN_EXCLUSIONS,
+  VULNERABILITY_PATTERNS,
+} from "../lib/patterns.js";
 import { printSecurityReport } from "../lib/report.js";
 import type { Finding, SecurityReport, Severity } from "../types.js";
 
-const SECRET_PATTERNS: Array<{
-  id: string;
-  pattern: RegExp;
-  title: string;
-  severity: Severity;
-  recommendation: string;
-}> = [
-  {
-    id: "aws-key",
-    pattern: /AKIA[0-9A-Z]{16}/,
-    title: "Possible AWS access key",
-    severity: "critical",
-    recommendation: "Rotate the key immediately and use environment variables or a secrets manager.",
-  },
-  {
-    id: "openai-key",
-    pattern: /sk-[a-zA-Z0-9]{20,}/,
-    title: "Possible OpenAI API key",
-    severity: "critical",
-    recommendation: "Revoke the key at platform.openai.com and store secrets in CI/CD vaults.",
-  },
-  {
-    id: "github-token",
-    pattern: /ghp_[a-zA-Z0-9]{36,}/,
-    title: "Possible GitHub personal access token",
-    severity: "critical",
-    recommendation: "Revoke the token and use GitHub Actions secrets or OIDC.",
-  },
-  {
-    id: "private-key",
-    pattern: /-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----/,
-    title: "Private key in source",
-    severity: "critical",
-    recommendation: "Remove the key from the repo, rotate credentials, and add the file pattern to .gitignore.",
-  },
-  {
-    id: "generic-secret",
-    pattern: /(?:password|passwd|secret|api[_-]?key|auth[_-]?token)\s*[:=]\s*['"][^'"]{8,}['"]/i,
-    title: "Hardcoded credential",
-    severity: "high",
-    recommendation: "Move secrets to environment variables and scan git history with git-secrets or trufflehog.",
-  },
-  {
-    id: "jwt",
-    pattern: /eyJ[a-zA-Z0-9_-]+\.eyJ[a-zA-Z0-9_-]+\.[a-zA-Z0-9_-]+/,
-    title: "Possible JWT token",
-    severity: "high",
-    recommendation: "Ensure tokens are not committed; use short-lived tokens in CI only.",
-  },
-];
-
-const VULNERABILITY_PATTERNS: Array<{
-  id: string;
-  pattern: RegExp;
-  title: string;
-  severity: Severity;
-  recommendation: string;
-}> = [
-  {
-    id: "eval",
-    pattern: /\beval\s*\(/,
-    title: "Use of eval()",
-    severity: "high",
-    recommendation: "Avoid eval; use safer parsing alternatives.",
-  },
-  {
-    id: "innerhtml",
-    pattern: /\.innerHTML\s*=/,
-    title: "Direct innerHTML assignment",
-    severity: "medium",
-    recommendation: "Use textContent or a sanitization library to prevent XSS.",
-  },
-  {
-    id: "dangerously-set",
-    pattern: /dangerouslySetInnerHTML/,
-    title: "React dangerouslySetInnerHTML",
-    severity: "medium",
-    recommendation: "Sanitize HTML input with DOMPurify before rendering.",
-  },
-  {
-    id: "sql-concat",
-    pattern: /(?:query|execute)\s*\(\s*[`'"].*\$\{/,
-    title: "Possible SQL injection via string interpolation",
-    severity: "high",
-    recommendation: "Use parameterized queries or an ORM.",
-  },
-  {
-    id: "child-process",
-    pattern: /child_process\.(?:exec|spawn)\s*\([^)]*\+/,
-    title: "Shell command built with concatenation",
-    severity: "high",
-    recommendation: "Use execFile with argument arrays instead of shell string concatenation.",
-  },
-];
-
 function emptySummary(): Record<Severity, number> {
   return { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
+}
+
+function isExcluded(filePath: string): boolean {
+  const normalized = filePath.replace(/\\/g, "/");
+  return SECURITY_SCAN_EXCLUSIONS.some((pattern) => pattern.test(normalized));
 }
 
 export async function runSecurityScan(
   root: string,
   options: { json?: boolean; maxFiles?: number; silent?: boolean } = {}
 ): Promise<SecurityReport> {
-  const files = await listSourceFiles(root);
+  const allFiles = await listSourceFiles(root);
+  const files = allFiles.filter((f) => !isExcluded(f));
   const maxFiles = options.maxFiles ?? 500;
   const scanned = files.slice(0, maxFiles);
   const findings: Finding[] = [];
@@ -154,8 +70,10 @@ export async function runSecurityScan(
     }
   }
 
-  const lockfile = files.find((f) => f.endsWith("package-lock.json") || f.endsWith("pnpm-lock.yaml"));
-  if (!lockfile && files.some((f) => f.endsWith("package.json"))) {
+  const lockfile = allFiles.find(
+    (f) => f.endsWith("package-lock.json") || f.endsWith("pnpm-lock.yaml")
+  );
+  if (!lockfile && allFiles.some((f) => f.endsWith("package.json"))) {
     findings.push({
       id: "no-lockfile",
       title: "Missing lockfile",

@@ -47,7 +47,7 @@ describe("runHealthAudit", () => {
   });
 
   it("detects missing essential files", async () => {
-    const report = await runHealthAudit(tempDir, true);
+    const report = await runHealthAudit(tempDir, true, true);
     expect(report.score).toBeLessThan(50);
     expect(report.findings.some((f) => f.id.includes("README"))).toBe(true);
   });
@@ -62,7 +62,7 @@ describe("runHealthAudit", () => {
     await mkdir(join(tempDir, ".github", "workflows"), { recursive: true });
     await writeFile(join(tempDir, ".github", "workflows", "ci.yml"), "name: ci\n");
 
-    const report = await runHealthAudit(tempDir, true);
+    const report = await runHealthAudit(tempDir, true, true);
     expect(report.score).toBeGreaterThan(40);
     expect(report.checks.find((c) => c.id === "README.md")?.passed).toBe(true);
   });

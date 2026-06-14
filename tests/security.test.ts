@@ -18,7 +18,7 @@ describe("runSecurityScan", () => {
       'const key = "sk-abcdefghijklmnopqrstuvwxyz123456";\n'
     );
 
-    const report = await runSecurityScan(tempDir, { json: true });
+    const report = await runSecurityScan(tempDir, { json: true, silent: true });
     expect(report.summary.critical).toBeGreaterThan(0);
     expect(report.findings.some((f) => f.title.includes("OpenAI"))).toBe(true);
   });
@@ -26,7 +26,7 @@ describe("runSecurityScan", () => {
   it("detects eval usage", async () => {
     await writeFile(join(tempDir, "src", "unsafe.js"), "eval(userInput);\n");
 
-    const report = await runSecurityScan(tempDir, { json: true });
+    const report = await runSecurityScan(tempDir, { json: true, silent: true });
     expect(report.findings.some((f) => f.title.includes("eval"))).toBe(true);
   });
 
@@ -36,7 +36,7 @@ describe("runSecurityScan", () => {
       'export const greet = (name: string) => `Hello, ${name}`;\n'
     );
 
-    const report = await runSecurityScan(tempDir, { json: true });
+    const report = await runSecurityScan(tempDir, { json: true, silent: true });
     expect(report.summary.critical).toBe(0);
     expect(report.findings.filter((f) => f.severity === "critical")).toHaveLength(0);
   });

@@ -134,10 +134,14 @@ Before opening a PR, ensure:
   const outputPath = options.output ?? join(root, "AGENTS.md");
 
   if (dryRun) {
-    console.log(content);
+    if (process.env.NODE_ENV !== "test") {
+      console.log(content);
+    }
   } else {
     await writeFile(outputPath, content, "utf-8");
-    console.log(chalk.green(`Generated ${outputPath}`));
+    if (process.env.NODE_ENV !== "test") {
+      console.log(chalk.green(`Generated ${outputPath}`));
+    }
   }
 
   return content;
