@@ -6,7 +6,7 @@ import {
   VULNERABILITY_PATTERNS,
 } from "../lib/patterns.js";
 import { printSecurityReport } from "../lib/report.js";
-import { scanContentForPatterns } from "../lib/scan.js";
+import { scanContentForPatterns, detectHighEntropySecrets } from "../lib/scan.js";
 import type { Finding, MaintainflowConfig, SecurityReport, Severity } from "../types.js";
 
 function emptySummary(): Record<Severity, number> {
@@ -43,7 +43,8 @@ export async function runSecurityScan(
 
     findings.push(
       ...scanContentForPatterns(content, SECRET_PATTERNS, relativePath, "Secret pattern matched"),
-      ...scanContentForPatterns(content, VULNERABILITY_PATTERNS, relativePath, "Unsafe pattern detected")
+      ...scanContentForPatterns(content, VULNERABILITY_PATTERNS, relativePath, "Unsafe pattern detected"),
+      ...detectHighEntropySecrets(content, relativePath)
     );
 
     if (relativePath.includes(".env") && !relativePath.endsWith(".example")) {

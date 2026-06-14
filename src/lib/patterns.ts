@@ -86,6 +86,41 @@ export const SECRET_PATTERNS: ScanPattern[] = [
     severity: "high",
     recommendation: "Use Authorization headers from environment, never hardcoded in source.",
   },
+  {
+    id: "azure-key",
+    pattern: /(?:AccountKey|SharedAccessKey|DefaultEndpointsProtocol)[=:]\s*['"][^'"]{20,}['"]/i,
+    title: "Possible Azure storage / access key",
+    severity: "critical",
+    recommendation: "Rotate the Azure key and use managed identity or Key Vault.",
+  },
+  {
+    id: "google-api-key",
+    pattern: /AIza[0-9A-Za-z\-_]{35}/,
+    title: "Possible Google API key",
+    severity: "critical",
+    recommendation: "Restrict or revoke the key in Google Cloud console.",
+  },
+  {
+    id: "slack-signing-secret",
+    pattern: /xapp-[A-Z0-9]{1,}-[A-Z0-9]{1,}-[A-Za-z0-9]{1,}/,
+    title: "Possible Slack signing secret / app token",
+    severity: "critical",
+    recommendation: "Regenerate app credentials and store via environment variables.",
+  },
+  {
+    id: "gitlab-token",
+    pattern: /glpat-[0-9a-zA-Z\-]{20,}/,
+    title: "Possible GitLab personal access token",
+    severity: "critical",
+    recommendation: "Revoke the token and prefer CI/CD variables or OIDC.",
+  },
+  {
+    id: "pem-private-key",
+    pattern: /-----BEGIN (?:RSA |EC |DSA |OPENSSH |ENCRYPTED )?PRIVATE KEY-----/,
+    title: "PEM private key block",
+    severity: "critical",
+    recommendation: "Never commit private keys. Use secrets management and rotate.",
+  },
 ];
 
 export const VULNERABILITY_PATTERNS: ScanPattern[] = [

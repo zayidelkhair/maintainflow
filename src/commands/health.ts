@@ -24,6 +24,12 @@ const ESSENTIAL_FILES = [
   { path: ".maintainflow.json", name: "maintainflow config", weight: 3 },
 ];
 
+const ADDITIONAL_CHECKS = [
+  { path: ".gitignore", name: ".gitignore", weight: 4 },
+  { path: "FUNDING.yml", name: "Funding file", weight: 3, altPaths: [".github/FUNDING.yml"] },
+  { path: ".github/CODEOWNERS", name: "CODEOWNERS", weight: 2, altPaths: ["CODEOWNERS"] },
+];
+
 export async function runHealthAudit(
   root: string,
   json = false,
@@ -53,6 +59,37 @@ export async function runHealthAudit(
         severity: file.weight >= 10 ? "high" : "medium",
         file: file.path,
         recommendation: `Add a ${file.name.toLowerCase()} to improve maintainer and contributor experience.`,
+      });
+    }
+  }
+
+  // Additional best-practice files (lower weight)
+  for (const file of ADDITIONAL_CHECKS) {
+    let exists = await pathExists(join(root, file.path));
+    if (!exists && file.altPaths) {
+      for (const alt of file.altPaths) {
+        if (await pathExists(join(root, alt))) {
+          exists = true;
+          break;
+        }
+      }
+    }
+    checks.push({
+      id: file.path,
+      name: file.name,
+      passed: exists,
+      weight: file.weight,
+      message: exists ? "Present" : "Missing (recommended)",
+    });
+
+    if (!exists) {
+      findings.push({
+        id: `missing-${file.path}`,
+        title: `Missing ${file.name}`,
+        description: `${file.path} (or alt location) was not found.`,
+        severity: "low",
+        file: file.path,
+        recommendation: `Consider adding ${file.name} to improve discoverability and governance.`,
       });
     }
   }
@@ -122,6 +159,8 @@ export async function runHealthAudit(
       const pkg = JSON.parse(pkgContent) as {
         scripts?: Record<string, string>;
         repository?: unknown;
+        bugs?: unknown;
+        homepage?: unknown;
       };
       const hasTestScript = Boolean(pkg.scripts?.test);
       checks.push({
@@ -151,6 +190,15 @@ export async function runHealthAudit(
         weight: 5,
         message: hasRepo ? "Configured" : "Missing repository field",
       });
+
+      const hasBugsOrHomepage = Boolean(pkg.bugs || pkg.homepage);
+      checks.push({
+        id: "pkg-links",
+        name: "Package bugs/homepage fields",
+        passed: hasBugsOrHomepage,
+        weight: 3,
+        message: hasBugsOrHomepage ? "Configured" : "Missing bugs or homepage",
+      });
     } catch {
       findings.push({
         id: "invalid-package-json",
@@ -158,6 +206,32 @@ export async function runHealthAudit(
         description: "package.json could not be parsed.",
         severity: "high",
         file: "package.json",
+      });
+    }
+  }
+
+  // README quality signals (presence of key sections)
+  const readmeContent = await readTextFile(join(root, "README.md"));
+  if (readmeContent) {
+    const lower = readmeContent.toLowerCase();
+    const hasInstall = /(?:^|\n)#+\s*(?:install|installation|getting started|quick start)|npm (?:i|install)|yarn add|pnpm add|pip install|go (?:install|get)|npx /.test(lower);
+    const hasUsage = /(?:^|\n)#+\s*(?:usage|example|examples|quick start)|## quick start|## usage/.test(lower) || /usage|example/.test(lower);
+    const readmeQuality = hasInstall || hasUsage; // more lenient: good docs if it guides users at all
+    checks.push({
+      id: "readme-quality",
+      name: "README has install/usage guidance",
+      passed: readmeQuality,
+      weight: 4,
+      message: readmeQuality ? "Good" : "Could be improved (add install + usage sections)",
+    });
+    if (!readmeQuality) {
+      findings.push({
+        id: "readme-quality",
+        title: "README could be more helpful",
+        description: "README is missing clear install or usage sections.",
+        severity: "low",
+        file: "README.md",
+        recommendation: "Add an Installation section and a Usage/Quickstart section with copy-paste commands.",
       });
     }
   }

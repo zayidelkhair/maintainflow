@@ -2,6 +2,25 @@
 
 All notable changes to maintainflow are documented here.
 
+## [0.3.0] - 2026-06-14
+
+### Added
+
+- `maintainflow review` — Codex-ready review prompt generator + change analysis (ideal for feeding diffs + context directly to Codex / LLMs for high-quality PR and commit reviews)
+- High-entropy secret detection (Shannon entropy on long credential-like values and base64-ish literals) — catches unknown/generic secrets the regexes miss
+- New security patterns: Azure keys, Google API keys, Slack app tokens/signing secrets, GitLab PATs, extended PEM private key detection
+- Expanded health audit: `.gitignore`, `FUNDING.yml` (or `.github/`), `CODEOWNERS`, package.json `bugs`/`homepage`, and README quality (install + usage sections)
+- FUNDING.yml bootstrapped by `init`
+- GitHub Action now supports `run-security`, `include-review` (Codex preview), and improved summaries
+- Programmatic exports for `runReview`, `printReview`, `formatReviewMarkdown`
+- New tests for entropy scanner and review command
+
+### Changed
+
+- Security scanner is significantly harder to evade for credential leaks
+- Health scoring now rewards complete OSS governance and documentation hygiene (weights chosen to keep existing perfect scores achievable)
+- `init`, agents-md generator, and docs reference the new review workflow
+
 ## [0.2.0] - 2026-06-14
 
 ### Added

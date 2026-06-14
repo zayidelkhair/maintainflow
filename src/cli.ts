@@ -8,6 +8,7 @@ import { runHealthAudit } from "./commands/health.js";
 import { runInit } from "./commands/init.js";
 import { markReleaseItem, runReleaseChecklist } from "./commands/release.js";
 import { generateAuditReport } from "./commands/report.js";
+import { runReview, printReview } from "./commands/review.js";
 import { runSecurityScan } from "./commands/security.js";
 import { runTriage } from "./commands/triage.js";
 import { loadConfig } from "./lib/config.js";
@@ -18,7 +19,7 @@ const program = new Command();
 program
   .name("maintainflow")
   .description("Open-source maintainer toolkit for health audits, security, triage, and releases")
-  .version("0.2.0");
+  .version("0.3.0");
 
 program
   .command("health")
@@ -57,6 +58,23 @@ program
   .action(async (opts: { path: string; json?: boolean }) => {
     const root = resolve(opts.path);
     await runTriage(root, opts.json);
+  });
+
+program
+  .command("review")
+  .description("Generate Codex-ready review prompts and analysis for recent changes or a PR")
+  .option("-p, --path <path>", "Repository path", ".")
+  .option("--pr <number>", "Review a specific PR number (requires gh)")
+  .option("--commit <ref>", "Review a specific commit or range (e.g. HEAD~1)")
+  .option("--json", "Output as JSON")
+  .action(async (opts: { path: string; pr?: string; commit?: string; json?: boolean }) => {
+    const root = resolve(opts.path);
+    if (opts.json) {
+      const result = await runReview(root, { path: root, pr: opts.pr, commit: opts.commit, json: true });
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      await printReview(root, { path: root, pr: opts.pr, commit: opts.commit });
+    }
   });
 
 program

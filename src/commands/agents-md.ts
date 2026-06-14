@@ -93,6 +93,7 @@ npm install   # or equivalent for your stack
 | Lint | \`npm run lint\` |
 | Health audit | \`npx maintainflow health\` |
 | Security scan | \`npx maintainflow security\` |
+| Codex review prompt | \`npx maintainflow review\` |
 
 ## Coding Guidelines
 

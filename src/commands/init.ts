@@ -20,6 +20,17 @@ const TEMPLATES: InitTemplate[] = [
     content: defaultConfigJson,
   },
   {
+    path: "FUNDING.yml",
+    content: `# GitHub Sponsors (recommended)
+github: [your-github-username]
+
+# Other platforms (uncomment as needed)
+# patreon: your-patreon
+# ko_fi: your-kofi
+# custom: ['https://example.com/sponsor']
+`,
+  },
+  {
     path: "SECURITY.md",
     content: `# Security Policy
 

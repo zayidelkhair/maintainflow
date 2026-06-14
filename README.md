@@ -24,6 +24,8 @@ Open-source maintainers carry disproportionate load: security reviews, release c
 | `agents-md` | Generate `AGENTS.md` for Codex, Copilot, and other AI coding agents |
 | `report` | Full markdown/JSON audit report with README badge |
 | `audit` | Run health + security in one pass (great for CI) |
+| `review` | AI-optimized (Codex-ready) change review prompt generator for fast, high-signal reviews |
+| `review` | Generate ready-to-paste **Codex / LLM** review prompts + analysis for PRs, commits or HEAD changes |
 
 ## Quick start
 
@@ -102,6 +104,20 @@ maintainflow report --markdown --output AUDIT.md --triage
 
 Produces a shareable markdown report with health table, security findings, and optional triage summary.
 
+### AI-powered reviews (Codex / LLM ready)
+
+```bash
+# Analyze latest commit / HEAD and get a full structured prompt
+maintainflow review
+
+# Target a specific PR (uses gh)
+maintainflow review --pr 42
+```
+
+The output includes a **"Codex Prompt"** block you can paste verbatim into Codex, ChatGPT, Claude etc. It bundles diff + project context + triage hints + explicit review instructions for security, maintainability and OSS hygiene. Perfect pairing with Codex for OSS access.
+
+Security scanning also now includes **high-entropy detection** (catches unknown tokens and keys that regexes miss) plus expanded coverage for Azure, Google, GitLab, Slack app secrets, and PEM blocks.
+
 ### CI integration
 
 **Option 1 — one-liner:**
@@ -113,7 +129,7 @@ Produces a shareable markdown report with health table, security findings, and o
 **Option 2 — GitHub Action:**
 
 ```yaml
-- uses: zayidelkhair/maintainflow@v0.2.0
+- uses: zayidelkhair/maintainflow@v0.3.0
   with:
     path: .
 ```

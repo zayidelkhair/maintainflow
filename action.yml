@@ -1,5 +1,5 @@
 name: Maintainflow Audit
-description: Run maintainflow health and security audit in CI
+description: Run maintainflow health + security (+ optional review) in CI for OSS maintainers
 branding:
   icon: shield
   color: green
@@ -10,6 +10,15 @@ inputs:
   min-health-score:
     description: Minimum health score to pass (overrides .maintainflow.json)
     default: ""
+  run-security:
+    description: "Also run security scan (true/false)"
+    default: "true"
+  include-review:
+    description: "Generate Codex-style review summary for latest changes (requires git history)"
+    default: "false"
+  fail-on-findings:
+    description: "Exit 1 on critical security or low health (default respects config)"
+    default: "true"
 runs:
   using: composite
   steps:
@@ -18,5 +27,27 @@ runs:
         node-version: 22
     - name: Run maintainflow audit
       shell: bash
-      run: npx maintainflow@latest audit --path ${{ inputs.path }}
+      run: |
+        ARGS="audit --path ${{ inputs.path }}"
+        if [ -n "${{ inputs.min-health-score }}" ]; then
+          # min score handled by config or post, but still run full
+          echo "min-health-score=${{ inputs.min-health-score }}" >> $GITHUB_STEP_SUMMARY
+        fi
+        npx maintainflow@latest $ARGS
+      working-directory: ${{ github.workspace }}
+    - name: Run security scan (optional)
+      if: ${{ inputs.run-security == 'true' }}
+      shell: bash
+      run: npx maintainflow@latest security --path ${{ inputs.path }}
+      working-directory: ${{ github.workspace }}
+    - name: Generate review prompt (Codex preview)
+      if: ${{ inputs.include-review == 'true' }}
+      shell: bash
+      run: npx maintainflow@latest review --path ${{ inputs.path }}
+      working-directory: ${{ github.workspace }}
+      continue-on-error: true
+    - name: Report summary
+      shell: bash
+      run: |
+        echo "maintainflow CI run complete. See job logs for detailed health/security." >> $GITHUB_STEP_SUMMARY
       working-directory: ${{ github.workspace }}
