@@ -1,8 +1,8 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import chalk from "chalk";
-import { getRepoName, readTextFile } from "../lib/fs.js";
-import { getLatestTag, getRemoteUrl, isGitRepo } from "../lib/git.js";
+import { getRepoName } from "../lib/fs.js";
+import { getRemoteUrl, isGitRepo } from "../lib/git.js";
 import type { TriageItem } from "../types.js";
 
 const exec = promisify(execFile);
