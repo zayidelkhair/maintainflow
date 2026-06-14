@@ -1,0 +1,61 @@
+{
+  "name": "maintainflow",
+  "version": "0.1.0",
+  "description": "Open-source maintainer toolkit — repo health audits, security scans, PR triage, and release automation for OSS projects",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "maintainflow": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/cli.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "open-source",
+    "maintainer",
+    "github",
+    "security",
+    "cli",
+    "oss",
+    "repository-health",
+    "release-automation",
+    "codex",
+    "pr-triage"
+  ],
+  "author": "Zayid Elkahir <seeknoobwisdom@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zayidelkhair/maintainflow.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zayidelkhair/maintainflow/issues"
+  },
+  "homepage": "https://github.com/zayidelkhair/maintainflow#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "glob": "^11.0.1",
+    "ora": "^8.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
+  }
+}
