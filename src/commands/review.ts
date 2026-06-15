@@ -122,37 +122,46 @@ export async function runReview(root: string, options: ReviewOptions = { path: "
     target = options.commit;
     summary = `Review of commit/range ${target}`;
   } else {
-    // Try gh first for a live PR
-    const prData = await fetchPrForReview(root);
-    if (prData) {
-      target = prData.title;
-      diff = prData.diff;
-      summary = `Review of open PR: ${target}`;
-    } else if (hasGit) {
-      const recent = await getRecentCommitDiff(root);
-      target = recent.target;
-      diff = recent.diff;
-      summary = `Review of recent commit: ${target}`;
+    // Try gh first for a live PR only when we have a github remote.
+    // This keeps tests (which use fresh local git with no remote) completely offline and fast.
+    const isGithubRemote = !!remote && remote.includes('github.com');
+    if (isGithubRemote) {
+      const prData = await fetchPrForReview(root);
+      if (prData) {
+        target = prData.title;
+        diff = prData.diff;
+        summary = `Review of open PR: ${target}`;
+      }
+    }
+    if (!target || target === "latest changes") {
+      if (hasGit) {
+        const recent = await getRecentCommitDiff(root);
+        target = recent.target;
+        diff = recent.diff;
+        summary = `Review of recent commit: ${target}`;
+      }
     }
   }
 
-  // Also pull lightweight triage context
-  try {
-    // lightweight reuse of gh if possible (reuse same approach as triage but minimal)
-    const { stdout } = await exec("gh", ["pr", "list", "--state", "open", "--limit", "3", "--json", "number,title,labels"], { cwd: root });
-    const prs = JSON.parse(stdout) as Array<{ number: number; title: string; labels?: Array<{ name: string }> }>;
-    if (prs && prs.length) {
-      triageContext = prs.map((p) => ({
-        type: "pr" as const,
-        number: p.number,
-        title: p.title,
-        labels: (p.labels || []).map((l) => l.name),
-        priority: "normal" as const,
-        reason: "Open PR in queue",
-      }));
+  // Also pull lightweight triage context only for github remotes (skips in hermetic tests)
+  if (remote && remote.includes('github.com')) {
+    try {
+      // lightweight reuse of gh if possible (reuse same approach as triage but minimal)
+      const { stdout } = await exec("gh", ["pr", "list", "--state", "open", "--limit", "3", "--json", "number,title,labels"], { cwd: root });
+      const prs = JSON.parse(stdout) as Array<{ number: number; title: string; labels?: Array<{ name: string }> }>;
+      if (prs && prs.length) {
+        triageContext = prs.map((p) => ({
+          type: "pr" as const,
+          number: p.number,
+          title: p.title,
+          labels: (p.labels || []).map((l) => l.name),
+          priority: "normal" as const,
+          reason: "Open PR in queue",
+        }));
+      }
+    } catch {
+      // ignore, no gh
     }
-  } catch {
-    // ignore, no gh
   }
 
   const contextLines: string[] = [];
