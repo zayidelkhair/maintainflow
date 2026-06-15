@@ -27,6 +27,8 @@ runs:
         node-version: 22
     - name: Run maintainflow audit
       shell: bash
+      env:
+        ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
       run: |
         ARGS="audit --path ${{ inputs.path }}"
         if [ -n "${{ inputs.min-health-score }}" ]; then
@@ -38,11 +40,15 @@ runs:
     - name: Run security scan (optional)
       if: ${{ inputs.run-security == 'true' }}
       shell: bash
+      env:
+        ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
       run: npx maintainflow@latest security --path ${{ inputs.path }}
       working-directory: ${{ github.workspace }}
     - name: Generate review prompt (Codex preview)
       if: ${{ inputs.include-review == 'true' }}
       shell: bash
+      env:
+        ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
       run: npx maintainflow@latest review --path ${{ inputs.path }}
       working-directory: ${{ github.workspace }}
       continue-on-error: true
