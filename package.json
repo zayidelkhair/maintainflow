@@ -52,8 +52,8 @@
     "commander": "^13.1.0"
   },
   "devDependencies": {
-    "@types/node": "^22.13.10",
-    "typescript": "^5.8.2",
-    "vitest": "^3.0.9"
+    "@types/node": "^26.0.0",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
   }
 }
